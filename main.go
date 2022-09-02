@@ -6,30 +6,48 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/gtuk/discordwebhook"
+	"github.com/robfig/cron"
 	"github.com/tidwall/gjson"
 )
 
 func main() {
 	// 引数を定義する
-	url := flag.String("url", "http://localhost:8888", "EPGStation の ホスト:ポート を指定します。(例: http://your.server:8888)")
+	epgs_url := flag.String("url", "http://localhost:8888", "EPGStation の ホスト:ポート を指定します。(例: http://your.server:8888)")
+	cron_string := flag.String("cron", "@every 5s", "どのような間隔で確認するかを指定します。cron 形式を使用できます。")
+	discord_webhook_url := flag.String("discord", "", "Discord 上の Webhook 向け URL を指定します。")
+	discord_webhook_content := flag.String("webhook_content", ":warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！\n<@116124230243975173>", "Discord 上の Webhook で流す通知メッセージを指定します。")
 	flag.Parse()
 
+	// 確認を定期実行する
+	c := cron.New()
+	c.AddFunc(*cron_string, func() { call_check(*epgs_url, *discord_webhook_url, *discord_webhook_content) })
+	c.Start()
+
+	// 永眠
+	select {}
+}
+
+func call_check(epgs_url string, discord_webhook_url string, discord_webhook_content string) {
 	// EPGStation への接続性を確認する
-	_, err := http.Get(*url)
+	_, err := http.Get(epgs_url)
 	if err != nil {
 		log.Fatal("[ERROR] EPGStation への接続に失敗しました。")
-		os.Exit(1)
+		return
 	}
 
-	if check(*url) {
+	if check(epgs_url) {
 		log.Println("[INFO] EPGStation は正常に Mirakurun と接続しています。")
+		return
 	} else {
 		log.Println("[INFO] EPGStation は Mirakurun に接続できていません。")
+		if discord_webhook_url != "" {
+			warn_to_discord(discord_webhook_url, discord_webhook_content)
+		}
+		return
 	}
-
 }
 
 func check(base_url string) bool {
@@ -71,4 +89,17 @@ func get_channel(base_url string) string {
 	value := gjson.Get(buf.String(), "0.id")
 
 	return value.String()
+}
+
+func warn_to_discord(discord_webhook_url string, content string) {
+	username := "EPGSWatch"
+	message := discordwebhook.Message{
+		Username: &username,
+		Content:  &content,
+	}
+	err := discordwebhook.SendMessage(discord_webhook_url, message)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
 }
