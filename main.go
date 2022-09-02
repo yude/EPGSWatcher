@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gtuk/discordwebhook"
@@ -16,10 +17,24 @@ import (
 func main() {
 	// 引数を定義する
 	epgs_url := flag.String("url", "http://localhost:8888", "EPGStation の ホスト:ポート を指定します。(例: http://your.server:8888)")
-	cron_string := flag.String("cron", "@every 5s", "どのような間隔で確認するかを指定します。cron 形式を使用できます。")
-	discord_webhook_url := flag.String("discord", "", "Discord 上の Webhook 向け URL を指定します。")
-	discord_webhook_content := flag.String("webhook_content", ":warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！\n<@116124230243975173>", "Discord 上の Webhook で流す通知メッセージを指定します。")
+	cron_string := flag.String("cron", "@every 15s", "どのような間隔で確認するかを指定します。cron 形式を使用できます。")
+	discord_webhook_url := flag.String("discord_url", "", "Discord 上の Webhook 向け URL を指定します。")
+	discord_webhook_content := flag.String("discord_content", ":warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！", "Discord 上の Webhook で流す通知メッセージを指定します。")
 	flag.Parse()
+
+	// 環境変数が指定されていれば、その値を優先する
+	if os.Getenv("EPGS_URL") != "" {
+		*epgs_url = os.Getenv("EPGS_URL")
+	}
+	if os.Getenv("CRON") != "" {
+		*cron_string = os.Getenv("EPGS_URL")
+	}
+	if os.Getenv("DISCORD_URL") != "" {
+		*discord_webhook_url = os.Getenv("DISCORD_URL")
+	}
+	if os.Getenv("DISCORD_CONTENT") != "" {
+		*discord_webhook_content = os.Getenv("DISCORD_CONTENT")
+	}
 
 	// 確認を定期実行する
 	c := cron.New()
