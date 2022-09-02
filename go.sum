@@ -1,3 +1,5 @@
+github.com/gtuk/discordwebhook v1.0.2 h1:4whE4pAIW8NvZzDIhPODGIJVbBjuAoAIAa4iN/5GNrA=
+github.com/gtuk/discordwebhook v1.0.2/go.mod h1:U3LdXNJ1e0bx3MMe2a4mB1VBantPHOPly2jNd8ZWXec=
 github.com/tidwall/gjson v1.14.3 h1:9jvXn7olKEHU1S9vwoMGliaT8jq1vJ7IH/n9zD9Dnlw=
 github.com/tidwall/gjson v1.14.3/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
