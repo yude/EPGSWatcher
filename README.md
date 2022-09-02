@@ -29,7 +29,23 @@ $ ./EPGSWatcher -url http://your.server:port -discord https://discord.com/api/we
 ```
 
 ### Docker Compose を使用する場合
-* このリポジトリにある `docker-compose.yaml` をコピーして、環境変数を編集してください。
+* 以下の内容を `docker-compose.yaml` として保存し、環境変数を編集してください。
+```yaml
+version: '3.9'
+
+services:
+  epgswatcher:
+    image: ghcr.io/yude/epgswatcher:master
+    build: .
+    restart: unless-stopped
+    environment:
+      EPGS_URL: ""
+      CRON: ""
+      DISCORD_URL: ""
+      MIRAKURUN_MSG: ""
+      EPGS_MSG: ""
+```
+* `docker compose up -d` で起動します。
 
 ## ライセンス
 MIT

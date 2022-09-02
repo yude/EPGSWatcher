@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   epgswatcher:
-    image: ghcr.io/yude/epgswatcher:main
+    image: ghcr.io/yude/epgswatcher:master
     build: .
     restart: unless-stopped
     environment:
