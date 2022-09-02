@@ -15,11 +15,14 @@ import (
 )
 
 func main() {
+	log.SetOutput(os.Stdout)
+
 	// 引数を定義する
 	epgs_url := flag.String("url", "http://localhost:8888", "EPGStation の ホスト:ポート を指定します。(例: http://your.server:8888)")
 	cron_string := flag.String("cron", "@every 15s", "どのような間隔で確認するかを指定します。cron 形式を使用できます。")
 	discord_webhook_url := flag.String("discord_url", "", "Discord 上の Webhook 向け URL を指定します。")
-	discord_webhook_content := flag.String("discord_content", ":warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！", "Discord 上の Webhook で流す通知メッセージを指定します。")
+	mirakurun_msg := flag.String("mirakurun_msg", ":warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！", "Mirakurun (mirakc) バックエンドと接続できないときのメッセージを指定します。")
+	epgs_msg := flag.String("epgs_msg", ":warning: EPGStation に接続できません！", "EPGStation と接続できないときのメッセージを指定します。")
 	flag.Parse()
 
 	// 環境変数が指定されていれば、その値を優先する
@@ -27,41 +30,48 @@ func main() {
 		*epgs_url = os.Getenv("EPGS_URL")
 	}
 	if os.Getenv("CRON") != "" {
-		*cron_string = os.Getenv("EPGS_URL")
+		*cron_string = os.Getenv("CRON")
 	}
 	if os.Getenv("DISCORD_URL") != "" {
 		*discord_webhook_url = os.Getenv("DISCORD_URL")
 	}
-	if os.Getenv("DISCORD_CONTENT") != "" {
-		*discord_webhook_content = os.Getenv("DISCORD_CONTENT")
+	if os.Getenv("MIRAKURUN_MSG") != "" {
+		*mirakurun_msg = os.Getenv("MIRAKURUN_MSG")
 	}
+	if os.Getenv("EPGS_MSG") != "" {
+		*epgs_msg = os.Getenv("EPGS_MSG")
+	}
+
+	log.Println("[INFO] 監視を開始します。")
+	log.Println("[INFO] EPGStation の宛先は " + *epgs_url + " です。")
+	log.Println("[INFO] cron の設定は " + *cron_string + " です。")
 
 	// 確認を定期実行する
 	c := cron.New()
-	c.AddFunc(*cron_string, func() { call_check(*epgs_url, *discord_webhook_url, *discord_webhook_content) })
+	c.AddFunc(*cron_string, func() { call_check(*epgs_url, *discord_webhook_url, *mirakurun_msg, *epgs_msg) })
 	c.Start()
 
 	// 永眠
 	select {}
 }
 
-func call_check(epgs_url string, discord_webhook_url string, discord_webhook_content string) {
+func call_check(epgs_url string, discord_webhook_url string, mirakurun_msg string, epgs_msg string) {
 	// EPGStation への接続性を確認する
 	_, err := http.Get(epgs_url)
 	if err != nil {
-		log.Fatal("[ERROR] EPGStation への接続に失敗しました。")
-		return
-	}
-
-	if check(epgs_url) {
-		log.Println("[INFO] EPGStation は正常に Mirakurun と接続しています。")
-		return
-	} else {
-		log.Println("[INFO] EPGStation は Mirakurun に接続できていません。")
+		log.Println("[ERROR] EPGStation への接続に失敗しました。")
 		if discord_webhook_url != "" {
-			warn_to_discord(discord_webhook_url, discord_webhook_content)
+			discord_epgs(discord_webhook_url, epgs_msg)
 		}
-		return
+	} else {
+		if check(epgs_url) {
+			log.Println("[INFO] EPGStation は正常に Mirakurun と接続しています。")
+		} else {
+			log.Println("[INFO] EPGStation は Mirakurun に接続できていません。")
+			if discord_webhook_url != "" {
+				discord_mirakurun(discord_webhook_url, mirakurun_msg)
+			}
+		}
 	}
 }
 
@@ -106,7 +116,7 @@ func get_channel(base_url string) string {
 	return value.String()
 }
 
-func warn_to_discord(discord_webhook_url string, content string) {
+func discord_mirakurun(discord_webhook_url string, content string) {
 	username := "EPGSWatch"
 	message := discordwebhook.Message{
 		Username: &username,
@@ -114,7 +124,18 @@ func warn_to_discord(discord_webhook_url string, content string) {
 	}
 	err := discordwebhook.SendMessage(discord_webhook_url, message)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
-	return
+}
+
+func discord_epgs(discord_webhook_url string, content string) {
+	username := "EPGSWatch"
+	message := discordwebhook.Message{
+		Username: &username,
+		Content:  &content,
+	}
+	err := discordwebhook.SendMessage(discord_webhook_url, message)
+	if err != nil {
+		log.Println(err)
+	}
 }
