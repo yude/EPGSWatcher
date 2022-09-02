@@ -13,8 +13,8 @@ EPGStation と Mirakurun (mirakc) 間の接続性を監視
 
     | 環境変数 | コマンドライン引数 | 説明 |
     | - | - | - |
-    | `EPGS_URL` | `url` | EPGStation への URL <br>例 / 既定値: `http://localhost:8888` |
-    | `CRON` | `cron` | cron 形式の間隔指定 <br>例: `@daily`, `0 30 * * * *`, ... <br> 既定値: `@every 15s`|
+    | `EPGS_URL` | `url` | EPGStation への URL **必須** <br>例 / 既定値: `http://localhost:8888` |
+    | `CRON` | `cron` | cron 形式の間隔指定 **必須** <br>例: `@daily`, `0 30 * * * *`, ... <br> 既定値: `@every 15s`|
     | `DISCORD_URL` | `discord_url` | Discord の Webhook URL を指定 <br> 既定値: (空欄) <br> 空文字の場合、通知処理は行われません。 |
     | `MIRAKURUN_MSG` | `mirakurun_msg` | Mirakurun と接続できないときの警告メッセージを指定 <br> 既定値: `:warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！` |
     | `EPGS_MSG` | `epgs_msg` | EPGStation と接続できないときの警告メッセージを指定 <br> 既定値: `:warning: EPGStation に接続できません！` |
@@ -25,7 +25,7 @@ EPGStation と Mirakurun (mirakc) 間の接続性を監視
 # ビルド
 $ go build .
 # 実行
-$ ./EPGSWatcher -url http://your.server:port -discord https://discord.com/api/webhooks/xxx
+$ ./EPGSWatcher -url http://your.server:port -discord_url https://discord.com/api/webhooks/xxx
 ```
 
 ### Docker Compose を使用する場合
