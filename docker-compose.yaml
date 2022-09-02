@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  epgswatcher:
+    image: ghcr.io/yude/epgswatcher:main
+    build: .
+    restart: unless-stopped
+    environment:
+      EPGS_URL: ""
+      CRON: ""
+      DISCORD_URL: ""
+      MIRAKURUN_MSG: ""
+      EPGS_MSG: ""
