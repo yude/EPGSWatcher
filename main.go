@@ -19,10 +19,11 @@ func main() {
 
 	// 引数を定義する
 	epgs_url := flag.String("url", "http://localhost:8888", "EPGStation の ホスト:ポート を指定します。(例: http://your.server:8888)")
-	cron_string := flag.String("cron", "@every 15s", "どのような間隔で確認するかを指定します。cron 形式を使用できます。")
+	cron_string := flag.String("cron", "@every 30m", "どのような間隔で確認するかを指定します。cron 形式を使用できます。")
 	discord_webhook_url := flag.String("discord_url", "", "Discord 上の Webhook 向け URL を指定します。")
 	mirakurun_msg := flag.String("mirakurun_msg", ":warning: EPGStation が Mirakurun (mirakc) バックエンドと接続できていません！", "Mirakurun (mirakc) バックエンドと接続できないときのメッセージを指定します。")
 	epgs_msg := flag.String("epgs_msg", ":warning: EPGStation に接続できません！", "EPGStation と接続できないときのメッセージを指定します。")
+	watch_timeout := flag.String("timeout", "8", "どの時間応答がなければ Mirakurun (mirakc) と EPGStation 間の通信が破綻していると判断するかを指定します。単位は秒です。")
 	flag.Parse()
 
 	// 環境変数が指定されていれば、その値を優先する
@@ -41,6 +42,9 @@ func main() {
 	if os.Getenv("EPGS_MSG") != "" {
 		*epgs_msg = os.Getenv("EPGS_MSG")
 	}
+	if os.Getenv("TIMEOUT") != "" {
+		*watch_timeout = os.Getenv("TIMEOUT")
+	}
 
 	log.Println("[INFO] 監視を開始します。")
 	log.Println("[INFO] EPGStation の宛先は " + *epgs_url + " です。")
@@ -55,7 +59,7 @@ func main() {
 	select {}
 }
 
-func call_check(epgs_url string, discord_webhook_url string, mirakurun_msg string, epgs_msg string) {
+func call_check(epgs_url string, discord_webhook_url string, mirakurun_msg string, epgs_msg string, watch_timeout int) {
 	// EPGStation への接続性を確認する
 	_, err := http.Get(epgs_url)
 	if err != nil {
@@ -64,7 +68,7 @@ func call_check(epgs_url string, discord_webhook_url string, mirakurun_msg strin
 			discord_epgs(discord_webhook_url, epgs_msg)
 		}
 	} else {
-		if check(epgs_url) {
+		if check(epgs_url, watch_timeout) {
 			log.Println("[INFO] EPGStation は正常に Mirakurun と接続しています。")
 		} else {
 			log.Println("[INFO] EPGStation は Mirakurun に接続できていません。")
@@ -75,10 +79,10 @@ func call_check(epgs_url string, discord_webhook_url string, mirakurun_msg strin
 	}
 }
 
-func check(base_url string) bool {
+func check(base_url string, watch_timeout int) bool {
 	url := base_url + "/api/streams/live/" + get_channel(base_url) + "/m2ts?mode=2"
 	client := http.Client{
-		Timeout: 2 * time.Second,
+		Timeout: watch_timeout * time.Second,
 	}
 	res, err := client.Get(url)
 	if err != nil {
