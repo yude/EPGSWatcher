@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gtuk/discordwebhook"
@@ -46,13 +47,19 @@ func main() {
 		*watch_timeout = os.Getenv("TIMEOUT")
 	}
 
+	timeout, err := strconv.Atoi(*watch_timeout)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+
 	log.Println("[INFO] 監視を開始します。")
 	log.Println("[INFO] EPGStation の宛先は " + *epgs_url + " です。")
 	log.Println("[INFO] cron の設定は " + *cron_string + " です。")
 
 	// 確認を定期実行する
 	c := cron.New()
-	c.AddFunc(*cron_string, func() { call_check(*epgs_url, *discord_webhook_url, *mirakurun_msg, *epgs_msg) })
+	c.AddFunc(*cron_string, func() { call_check(*epgs_url, *discord_webhook_url, *mirakurun_msg, *epgs_msg, timeout) })
 	c.Start()
 
 	// 永眠
@@ -82,7 +89,7 @@ func call_check(epgs_url string, discord_webhook_url string, mirakurun_msg strin
 func check(base_url string, watch_timeout int) bool {
 	url := base_url + "/api/streams/live/" + get_channel(base_url) + "/m2ts?mode=2"
 	client := http.Client{
-		Timeout: watch_timeout * time.Second,
+		Timeout: time.Duration(watch_timeout) * time.Second,
 	}
 	res, err := client.Get(url)
 	if err != nil {
